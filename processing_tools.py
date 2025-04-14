@@ -42,8 +42,10 @@ class ArrayTools:
                 try:
                     #print(len(read(os.path.join(root, file))))
                     tr = read(os.path.join(root, file))[0]  #[0] extrae el primer "Trace" de ese Stream, que representa una señal individual (comp. de una estación, por ejemplo).
+                    #tr.filter(type="bandpass", freqmin=1, freqmax=3, zerophase=True)
                     if starttime is not None and endtime is not None:
                        tr.trim(start, end)
+                       tr.detrend(type="simple")
                     traces.append(tr)  #Añade la traza (tr) a una lista llamada traces, que acumula todas las señales válidas para trabajar con ellas después.
                 except:
                     print("file:", file, "Not valid")
@@ -154,7 +156,7 @@ class ArrayTools:
     def __plot_slowness_map(self, music_map, theta_math, slowness_range, peak_slowness, peak_baz):
 
         # Calcular coordenadas polares del pico
-        peak_theta_rad = np.deg2rad((90 - theta_math) % 360 + 180)
+        peak_theta_rad = np.deg2rad((90 - theta_math) % 360)
         music_map = 10*np.log(music_map / np.max(music_map))
         music_map = np.clip(music_map, a_min=-5.0, a_max=0)
         # Plot en coordenadas polares
@@ -214,8 +216,8 @@ class ArrayTools:
             # Calcular distancia y azimuth respecto a la referencia
             dist_m, az_deg, _ = gps2dist_azimuth(ref_lat, ref_lon, lat, lon)
             # Convertir a coordenadas locales (Este, Norte)
-            x = dist_m * np.cos(np.radians(az_deg))  # Este
-            y = dist_m * np.sin(np.radians(az_deg))  # Norte
+            x = dist_m * np.sin(np.radians(az_deg))  # Este
+            y = dist_m * np.cos(np.radians(az_deg))  # Norte
             sensor_positions.append([x, y])
         return np.array(sensor_positions)
 
@@ -265,7 +267,7 @@ class ArrayTools:
         i_max, j_max = np.unravel_index(np.argmax(music_map), music_map.shape)
         peak_slowness = slowness_range[i_max]*1E3
         theta_math = azimuths[j_max]
-        peak_baz = (90 - theta_math) % 360 + 180
+        peak_baz = (90 - theta_math) % 360
         print(f"Maximum Baz [º]: {peak_baz:.1f}", f"Maximum Slowness [s/km]: {peak_slowness:.3f}" )
         return music_map, azimuths, slowness_range, peak_slowness,  peak_baz
 
@@ -294,4 +296,4 @@ if __name__ == "__main__":
     start_date = "2017-09-03 03:39:05"
     end_date = "2017-09-03 03:39:08"
     AT.get_traces(starttime = start_date, endtime=end_date)
-    AT.run_music()
+    AT.run_music(slow_lim = 0.30)
